@@ -1,0 +1,21 @@
+
+name: flutter_music_app
+description: A Flutter music app demo.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  just_audio: ^0.9.36
+  rxdart: ^0.27.7
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/audio/song1.mp3
+    - assets/audio/song2.mp3
+    - assets/images/artist1.jpg
+    - assets/images/artist2.jpg
