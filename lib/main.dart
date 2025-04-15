@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
@@ -11,16 +12,11 @@ class SoundWaveApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SoundWave',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: Color(0xFF121212),
-        appBarTheme: AppBarTheme(backgroundColor: Color(0xFF1F1B24)),
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: Color(0xFF1F1B24),
-          selectedItemColor: Colors.deepPurpleAccent,
-          unselectedItemColor: Colors.grey,
-        ),
+        scaffoldBackgroundColor: const Color(0xFF0D0D0D),
+        fontFamily: 'Arial',
       ),
       home: HomePage(),
     );
@@ -55,42 +51,51 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('SoundWave')),
+      appBar: AppBar(
+        title: const Text('SoundWave', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: ListView.builder(
+        padding: const EdgeInsets.all(16),
         itemCount: songs.length,
         itemBuilder: (context, index) {
           final song = songs[index];
-          return ListTile(
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(song.image, width: 50, height: 50, fit: BoxFit.cover),
-            ),
-            title: Text(song.title, style: TextStyle(color: Colors.white)),
-            subtitle: Text(song.artist, style: TextStyle(color: Colors.grey)),
+          return GestureDetector(
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => NowPlayingPage(songIndex: index),
+              MaterialPageRoute(builder: (_) => NowPlayingPage(songIndex: index)),
+            ),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.deepPurple.shade800.withOpacity(0.4), Colors.black26],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.asset(song.image, width: 60, height: 60, fit: BoxFit.cover),
+                    ),
+                    title: Text(song.title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    subtitle: Text(song.artist, style: TextStyle(color: Colors.grey[400])),
+                    trailing: Icon(Icons.play_arrow, color: Colors.white70),
+                  ),
+                ),
               ),
             ),
           );
         },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ProfilePage()),
-            );
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.music_note), label: 'Now Playing'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
       ),
     );
   }
@@ -147,8 +152,8 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
   Stream<DurationState> get _durationStateStream =>
       Rx.combineLatest2<Duration, Duration, DurationState>(
         _player.positionStream,
-        _player.durationStream,
-        (position, duration) => DurationState(position: position, total: duration ?? Duration.zero),
+        _player.durationStream.map((d) => d ?? Duration.zero),
+        (position, duration) => DurationState(position: position, total: duration),
       );
 
   @override
@@ -162,85 +167,89 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     final song = songs[_currentIndex];
     return Scaffold(
       appBar: AppBar(title: Text(song.title)),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset(song.image, width: 200, height: 200, fit: BoxFit.cover),
-          SizedBox(height: 20),
-          Text(song.title, style: TextStyle(fontSize: 24)),
-          Text(song.artist, style: TextStyle(fontSize: 18, color: Colors.grey)),
-          SizedBox(height: 30),
-          StreamBuilder<DurationState>(
-            stream: _durationStateStream,
-            builder: (context, snapshot) {
-              final durationState = snapshot.data;
-              final progress = durationState?.position ?? Duration.zero;
-              final total = durationState?.total ?? Duration.zero;
-              return Column(
-                children: [
-                  Slider(
-                    min: 0,
-                    max: total.inMilliseconds.toDouble(),
-                    value: progress.inMilliseconds.clamp(0, total.inMilliseconds).toDouble(),
-                    onChanged: (value) => _player.seek(Duration(milliseconds: value.toInt())),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(_formatDuration(progress)),
-                        Text(_formatDuration(total)),
-                      ],
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: Image.asset(song.image, width: 250, height: 250, fit: BoxFit.cover),
+            ),
+            const SizedBox(height: 30),
+            Text(song.title, style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+            Text(song.artist, style: TextStyle(fontSize: 18, color: Colors.grey[400])),
+            const SizedBox(height: 30),
+            StreamBuilder<DurationState>(
+              stream: _durationStateStream,
+              builder: (context, snapshot) {
+                final durationState = snapshot.data;
+                final progress = durationState?.position ?? Duration.zero;
+                final total = durationState?.total ?? Duration.zero;
+                return Column(
+                  children: [
+                    Slider(
+                      activeColor: Colors.deepPurpleAccent,
+                      inactiveColor: Colors.grey,
+                      min: 0,
+                      max: total.inMilliseconds.toDouble(),
+                      value: progress.inMilliseconds.clamp(0, total.inMilliseconds).toDouble(),
+                      onChanged: (value) => _player.seek(Duration(milliseconds: value.toInt())),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                iconSize: 48,
-                icon: Icon(Icons.skip_previous),
-                onPressed: _playPrevious,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(_formatDuration(progress), style: TextStyle(fontSize: 14)),
+                          Text(_formatDuration(total), style: TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(icon: Icon(Icons.skip_previous, size: 40), onPressed: _playPrevious),
+                StreamBuilder<PlayerState>(
+                  stream: _player.playerStateStream,
+                  builder: (context, snapshot) {
+                    final playerState = snapshot.data;
+                    final playing = playerState?.playing ?? false;
+                    final processingState = playerState?.processingState;
+                    if (processingState == ProcessingState.loading || processingState == ProcessingState.buffering) {
+                      return const CircularProgressIndicator();
+                    } else {
+                      return IconButton(
+                        iconSize: 60,
+                        icon: Icon(playing ? Icons.pause_circle : Icons.play_circle),
+                        onPressed: () => playing ? _player.pause() : _player.play(),
+                      );
+                    }
+                  },
+                ),
+                IconButton(icon: Icon(Icons.skip_next, size: 40), onPressed: _playNext),
+              ],
+            ),
+            IconButton(
+              icon: Icon(
+                _isRepeat ? Icons.repeat_one : Icons.repeat,
+                size: 30,
+                color: _isRepeat ? Colors.deepPurpleAccent : Colors.white,
               ),
-              StreamBuilder<PlayerState>(
-                stream: _player.playerStateStream,
-                builder: (context, snapshot) {
-                  final playerState = snapshot.data;
-                  final playing = playerState?.playing ?? false;
-                  final processingState = playerState?.processingState;
-                  if (processingState == ProcessingState.loading || processingState == ProcessingState.buffering) {
-                    return CircularProgressIndicator();
-                  } else {
-                    return IconButton(
-                      iconSize: 64,
-                      icon: Icon(playing ? Icons.pause_circle : Icons.play_circle),
-                      onPressed: () => playing ? _player.pause() : _player.play(),
-                    );
-                  }
-                },
-              ),
-              IconButton(
-                iconSize: 48,
-                icon: Icon(Icons.skip_next),
-                onPressed: _playNext,
-              ),
-              IconButton(
-                iconSize: 32,
-                icon: Icon(_isRepeat ? Icons.repeat_one : Icons.repeat, color: _isRepeat ? Colors.deepPurpleAccent : Colors.white),
-                onPressed: () {
-                  setState(() {
-                    _isRepeat = !_isRepeat;
-                    _player.setLoopMode(_isRepeat ? LoopMode.one : LoopMode.off);
-                  });
-                },
-              ),
-            ],
-          ),
-        ],
+              onPressed: () {
+                setState(() {
+                  _isRepeat = !_isRepeat;
+                  _player.setLoopMode(_isRepeat ? LoopMode.one : LoopMode.off);
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -258,14 +267,3 @@ class DurationState {
 
   DurationState({required this.position, required this.total});
 }
-
-class ProfilePage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Profile')),
-      body: Center(child: Text('User Profile Page', style: TextStyle(fontSize: 24))),
-    );
-  }
-}
-<inserted from canvas>
