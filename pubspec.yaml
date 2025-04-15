@@ -19,3 +19,5 @@ flutter:
     - assets/audio/song2.mp3
     - assets/images/artist1.jpg
     - assets/images/artist2.jpg
+assets:
+  - assets/images/your_logo.png
